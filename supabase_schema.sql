@@ -12,6 +12,10 @@ CREATE TABLE public.profiles (
   last_name TEXT NOT NULL,
   birthday DATE NOT NULL,
   last_username_change TIMESTAMPTZ,
+  theme TEXT DEFAULT 'light' CHECK (theme IN ('light', 'dark', 'system')),
+  email_notifications BOOLEAN DEFAULT true,
+  daily_alerts BOOLEAN DEFAULT true,
+  performance_reports BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

@@ -45,13 +45,9 @@ export default function DashboardPage() {
   const [recentPicks, setRecentPicks] = useState<UserPick[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  console.log('[Dashboard] Render:', { isAuthenticated, loading, hasUser: !!user, userId: user?.id });
-
   // Immediate redirect if not authenticated (runs on every render)
   useEffect(() => {
-    console.log('[Dashboard] Auth check:', { loading, isAuthenticated });
     if (!loading && !isAuthenticated) {
-      console.log('[Dashboard] Not authenticated, redirecting to /get-started');
       router.replace("/get-started");
     }
   }, [isAuthenticated, loading, router]);
@@ -102,10 +98,10 @@ export default function DashboardPage() {
   // Show loading screen while checking auth
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking authentication...</p>
+          <p className="text-gray-600 dark:text-gray-400">Checking authentication...</p>
         </div>
       </div>
     );
@@ -114,9 +110,9 @@ export default function DashboardPage() {
   // Block access for unauthenticated users
   if (!isAuthenticated || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Redirecting to login...</p>
+          <p className="text-gray-600 dark:text-gray-400">Redirecting to login...</p>
         </div>
       </div>
     );
@@ -124,10 +120,10 @@ export default function DashboardPage() {
 
   if (loadingData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -138,19 +134,19 @@ export default function DashboardPage() {
     : "0.0";
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-50">
+      <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/dashboard" className="text-2xl font-black bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
               NBA Props
             </Link>
             <nav className="hidden md:flex gap-6">
-              <Link href="/dashboard" className="text-slate-700 font-semibold hover:text-blue-600 transition-colors">
+              <Link href="/dashboard" className="text-slate-700 dark:text-slate-300 font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 Dashboard
               </Link>
-              <Link href="/picks" className="text-slate-600 hover:text-blue-600 transition-colors">
+              <Link href="/picks" className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 Today's Picks
               </Link>
               <Link href="/about" className="text-slate-600 hover:text-blue-600 transition-colors">

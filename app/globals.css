@@ -8,6 +8,11 @@
     --foreground: 0 0% 5%;
   }
 
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+  }
+
   body {
     @apply bg-white antialiased;
     color: rgb(13, 13, 13);
@@ -17,9 +22,14 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  html.dark body {
+    @apply bg-slate-900;
+    color: rgb(245, 245, 245);
+  }
+
   /* Custom selection */
   ::selection {
-    @apply bg-black text-white;
+    @apply bg-black dark:bg-white text-white dark:text-black;
   }
 }
 

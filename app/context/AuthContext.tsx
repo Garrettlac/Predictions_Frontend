@@ -27,15 +27,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  console.log('[AuthProvider] Render:', { user: !!user, userId: user?.id, loading });
-
   useEffect(() => {
-    console.log('[AuthProvider] Initializing auth...');
-    
     const initializeAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('[AuthProvider] Session check:', { hasSession: !!session, userId: session?.user?.id, email: session?.user?.email, error });
         
         // If we have a session, validate the user still exists
         if (session?.user) {
@@ -47,7 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           // If user doesn't exist in database (deleted account), clear the session
           if (userError || !userData) {
-            console.log('[AuthProvider] User not found in profiles, clearing session:', { userError });
             await supabase.auth.signOut();
             localStorage.clear();
             sessionStorage.clear();
@@ -57,7 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
         
-        console.log('[AuthProvider] Setting user:', { hasUser: !!session?.user, userId: session?.user?.id });
         setUser(session?.user ?? null);
         setLoading(false);
       } catch (error) {

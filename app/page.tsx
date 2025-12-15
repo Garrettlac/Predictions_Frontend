@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="relative overflow-hidden bg-white">
+    <main className="relative overflow-hidden bg-white dark:bg-slate-900">
       <FloatingNav />
       <Hero />
       <InteractiveProbability />
@@ -22,11 +22,11 @@ function FloatingNav() {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5, duration: 0.6 }}
-      className="fixed top-8 right-8 z-50 mix-blend-difference"
+      className="fixed top-8 right-8 z-50"
     >
       <Link
         href="/about"
-        className="text-white text-sm tracking-wider hover:tracking-widest transition-all duration-300"
+        className="text-slate-900 dark:text-white text-sm tracking-wider hover:tracking-widest transition-all duration-300"
       >
         How it works
       </Link>

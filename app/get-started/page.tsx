@@ -11,20 +11,15 @@ export default function GetStartedPage() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
-  console.log('[GetStarted] Render:', { isAuthenticated, loading });
-
   // If already authenticated, redirect to dashboard
   useEffect(() => {
-    console.log('[GetStarted] Effect:', { loading, isAuthenticated });
     if (!loading && isAuthenticated) {
-      console.log('[GetStarted] Redirecting to /dashboard');
       router.replace("/dashboard");
     }
   }, [isAuthenticated, loading, router]);
 
   // Show loading while checking auth
   if (loading) {
-    console.log('[GetStarted] Showing loading screen');
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center">
         <div className="text-center">
@@ -37,14 +32,11 @@ export default function GetStartedPage() {
 
   // If authenticated, show blank while redirecting
   if (isAuthenticated) {
-    console.log('[GetStarted] Authenticated, returning null');
     return null;
   }
 
-  console.log('[GetStarted] Rendering form');
-
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex">
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900 flex">
       {/* Back to home */}
       <Link
         href="/"

@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="bg-white">
+    <main className="bg-white dark:bg-slate-900">
       <BackNav />
       <Opening />
       <WhatThis />
@@ -28,7 +28,7 @@ function BackNav() {
     >
       <Link
         href="/dashboard"
-        className="text-black text-sm tracking-wider hover:tracking-widest transition-all duration-300 flex items-center gap-2"
+        className="text-black dark:text-white text-sm tracking-wider hover:tracking-widest transition-all duration-300 flex items-center gap-2"
       >
         <span>←</span> Back to home
       </Link>
@@ -272,7 +272,6 @@ function WhatNext() {
 function InteractionZone() {
   const handleExplore = () => {
     // This would navigate to the predictions interface
-    console.log("Navigate to predictions");
   };
 
   return (

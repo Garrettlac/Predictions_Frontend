@@ -33,10 +33,10 @@ export default function PicksPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-slate-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking authentication...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-slate-900 dark:border-white mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Checking authentication...</p>
         </div>
       </div>
     );
@@ -44,16 +44,16 @@ export default function PicksPage() {
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Redirecting to login...</p>
+          <p className="text-gray-600 dark:text-gray-400">Redirecting to login...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <Header user={user} signOut={signOut} />
       <PicksGrid userId={user?.id} />
     </main>
@@ -69,32 +69,32 @@ function Header({ user, signOut }: { user: User | null; signOut: () => Promise<v
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
-      <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link
-          href="/dashboard"
-          className="text-sm font-medium text-gray-700 hover:text-black transition-colors flex items-center gap-2"
-        >
-          <span>←</span> Back
-        </Link>
-        
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute left-1/2 -translate-x-1/2"
-        >
-          <h1 className="text-xl font-black tracking-tight">Today's Picks</h1>
-          <p className="text-xs text-gray-500 text-center">December 14, 2025</p>
-        </motion.div>
+    <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
+      <nav className="max-w-7xl mx-auto px-6 py-4">
+        <div className="flex items-center justify-between mb-4">
+          <Link
+            href="/dashboard"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors flex items-center gap-2"
+          >
+            <span>←</span> Back
+          </Link>
 
-        <div className="flex items-center gap-4">
           <button
             onClick={handleSignOut}
-            className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors"
           >
             Sign Out
           </button>
         </div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <h1 className="text-xl font-black tracking-tight dark:text-white">Today's Picks</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">December 14, 2025</p>
+        </motion.div>
       </nav>
     </header>
   );
