@@ -80,13 +80,14 @@ function Hero() {
         }} />
       </div>
 
-      <div className="relative z-10 text-center px-6 max-w-6xl">
+      <div className="relative z-10 text-center px-6 max-w-6xl pb-16">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
+          className="pb-6"
         >
-          <h1 className="text-fluid-4xl md:text-[12vw] font-black tracking-tighter leading-none mb-8">
+          <h1 className="text-fluid-4xl md:text-[12vw] font-black tracking-tighter leading-[1.2] mb-4 overflow-visible">
             <span className="inline-block">
               <motion.span
                 className="inline-block"
@@ -103,9 +104,10 @@ function Hero() {
               </motion.span>
             </span>
             <br />
-            <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-slate-600 via-blue-700 to-slate-800">
+            <span className="inline-block px-2 pb-6 overflow-visible relative z-50">
               <motion.span
-                className="inline-block"
+                className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-slate-600 via-blue-700 to-slate-800 relative z-50"
+                style={{ perspective: 1000 }}
                 animate={{
                   rotateY: [0, 10, 0],
                 }}
@@ -138,7 +140,7 @@ function Hero() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8, duration: 0.6 }}
-          className="mt-16 flex flex-col sm:flex-row gap-4 justify-center items-center"
+          className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center"
         >
           <Link href="/get-started">
             <motion.button
@@ -541,11 +543,24 @@ function PredictionCard({ prediction, delay }: { prediction: any; delay: number 
 }
 
 function PlayfulCTA() {
+  const [shapes, setShapes] = useState<Array<{left: string; top: string; duration: number; delay: number; xOffset: number}>>([]);
+
+  useEffect(() => {
+    // Generate random values only on client to avoid hydration mismatch
+    setShapes([...Array(20)].map(() => ({
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      duration: 10 + Math.random() * 10,
+      delay: Math.random() * 5,
+      xOffset: Math.random() * 40 - 20
+    })));
+  }, []);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center px-6 py-20 overflow-hidden bg-gradient-to-br from-slate-100 via-gray-100 to-blue-100">
       {/* Floating shapes */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {shapes.map((shape, i) => (
           <motion.div
             key={i}
             className="absolute w-32 h-32 rounded-full opacity-20"
@@ -553,18 +568,18 @@ function PlayfulCTA() {
               background: `linear-gradient(135deg, 
                 ${["#64748b", "#475569", "#334155", "#1e293b", "#0f172a"][i % 5]}, 
                 ${["#3b82f6", "#2563eb", "#1d4ed8", "#0ea5e9", "#0284c7"][i % 5]})`,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              left: shape.left,
+              top: shape.top,
             }}
             animate={{
               y: [0, -30, 0],
-              x: [0, Math.random() * 40 - 20, 0],
+              x: [0, shape.xOffset, 0],
               rotate: [0, 180, 360],
             }}
             transition={{
-              duration: 10 + Math.random() * 10,
+              duration: shape.duration,
               repeat: Infinity,
-              delay: Math.random() * 5,
+              delay: shape.delay,
               ease: "easeInOut",
             }}
           />

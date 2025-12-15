@@ -1,21 +1,47 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 
 export default function GetStartedPage() {
   const [isSignUp, setIsSignUp] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
+  console.log('[GetStarted] Render:', { isAuthenticated, loading });
+
   // If already authenticated, redirect to dashboard
+  useEffect(() => {
+    console.log('[GetStarted] Effect:', { loading, isAuthenticated });
+    if (!loading && isAuthenticated) {
+      console.log('[GetStarted] Redirecting to /dashboard');
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, loading, router]);
+
+  // Show loading while checking auth
+  if (loading) {
+    console.log('[GetStarted] Showing loading screen');
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white/60">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If authenticated, show blank while redirecting
   if (isAuthenticated) {
-    router.push("/dashboard");
+    console.log('[GetStarted] Authenticated, returning null');
     return null;
   }
+
+  console.log('[GetStarted] Rendering form');
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex">
@@ -219,6 +245,7 @@ function SignUpForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { signUp } = useAuth();
@@ -233,8 +260,19 @@ function SignUpForm() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+
+    // Check password requirements (lowercase, uppercase, digit, symbol)
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (!hasLowercase || !hasUppercase || !hasDigit || !hasSymbol) {
+      setError("Password must include uppercase, lowercase, number, and symbol");
       return;
     }
 
@@ -255,9 +293,8 @@ function SignUpForm() {
     
     if (result.success) {
       setSuccess(true);
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1500);
+      setShowEmailConfirmation(true);
+      setIsLoading(false);
     } else {
       setError(result.error || "Sign up failed. Please try again.");
       setIsLoading(false);
@@ -265,7 +302,58 @@ function SignUpForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <>
+      {/* Email Confirmation Modal */}
+      {showEmailConfirmation && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-gradient-to-br from-slate-900 to-blue-900 rounded-2xl p-8 max-w-md w-full border border-white/20 shadow-2xl"
+          >
+            <div className="text-center">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring" }}
+                className="w-20 h-20 bg-gradient-to-r from-blue-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-6"
+              >
+                <span className="text-4xl">📧</span>
+              </motion.div>
+              
+              <h2 className="text-3xl font-black text-white mb-4">
+                Confirm Your Email
+              </h2>
+              
+              <p className="text-white/70 mb-2">
+                We've sent a confirmation link to:
+              </p>
+              
+              <p className="text-blue-400 font-semibold mb-6 text-lg">
+                {email}
+              </p>
+              
+              <p className="text-white/60 text-sm mb-8">
+                Click the link in your email to verify your account and get started with NBA predictions!
+              </p>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setShowEmailConfirmation(false);
+                  router.push("/");
+                }}
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-teal-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-teal-700 transition-all shadow-lg"
+              >
+                Got it!
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label htmlFor="firstName" className="block text-xs font-semibold text-white/90 mb-1">
@@ -355,6 +443,29 @@ function SignUpForm() {
           className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           placeholder="••••••••"
         />
+        {password && (
+          <div className="mt-2 space-y-1">
+            <div className="flex items-center gap-2 text-xs">
+              <span className={password.length >= 8 ? "text-green-400" : "text-white/40"}>
+                {password.length >= 8 ? "✓" : "○"} 8+ characters
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className={/[a-z]/.test(password) ? "text-green-400" : "text-white/40"}>
+                {/[a-z]/.test(password) ? "✓" : "○"} lowercase
+              </span>
+              <span className={/[A-Z]/.test(password) ? "text-green-400" : "text-white/40"}>
+                {/[A-Z]/.test(password) ? "✓" : "○"} uppercase
+              </span>
+              <span className={/[0-9]/.test(password) ? "text-green-400" : "text-white/40"}>
+                {/[0-9]/.test(password) ? "✓" : "○"} number
+              </span>
+              <span className={/[!@#$%^&*(),.?":{}|<>]/.test(password) ? "text-green-400" : "text-white/40"}>
+                {/[!@#$%^&*(),.?":{}|<>]/.test(password) ? "✓" : "○"} symbol
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div>
@@ -382,16 +493,6 @@ function SignUpForm() {
         </motion.div>
       )}
 
-      {success && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-200 text-xs"
-        >
-          Account created! Redirecting...
-        </motion.div>
-      )}
-
       <motion.button
         type="submit"
         disabled={isLoading}
@@ -402,5 +503,6 @@ function SignUpForm() {
         {isLoading ? "Creating Account..." : "Create Account"}
       </motion.button>
     </form>
+    </>
   );
 }

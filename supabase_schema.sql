@@ -32,7 +32,12 @@ CREATE TABLE public.user_picks (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   player_name TEXT NOT NULL,
   stat_type TEXT NOT NULL,
-  prediction_value DECIMAL(5,2) NOT NULL,
+  line DECIMAL(5,2) NOT NULL,
+  probability INTEGER NOT NULL,
+  team TEXT NOT NULL,
+  matchup TEXT NOT NULL,
+  confidence TEXT NOT NULL, -- high, medium, low
+  prediction_value DECIMAL(5,2),
   actual_value DECIMAL(5,2),
   status TEXT DEFAULT 'pending', -- pending, won, lost
   game_date DATE NOT NULL,
@@ -66,10 +71,10 @@ CREATE POLICY "Users can read own stats"
   FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert own stats"
+CREATE POLICY "Allow stats creation"
   ON public.user_stats
   FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (true);
 
 CREATE POLICY "Users can update own stats"
   ON public.user_stats
@@ -120,7 +125,10 @@ CREATE INDEX IF NOT EXISTS idx_user_picks_game_date ON public.user_picks(game_da
 
 -- Create trigger to initialize user_stats when profile is created
 CREATE OR REPLACE FUNCTION create_user_stats()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   INSERT INTO public.user_stats (user_id)
   VALUES (NEW.id)

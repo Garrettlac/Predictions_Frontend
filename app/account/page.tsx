@@ -20,6 +20,7 @@ export default function AccountPage() {
   const { user, isAuthenticated, loading, signOut } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -30,49 +31,59 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      router.push("/get-started");
+      router.replace("/get-started");
     }
   }, [isAuthenticated, loading, router]);
 
   useEffect(() => {
     async function loadProfile() {
-      if (user) {
+      if (!user) {
+        setLoadingProfile(false);
+        return;
+      }
+
+      try {
+        setLoadingProfile(true);
         const { data, error } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", user.id)
-          .single();
+          .eq("id", user.id);
 
-        if (data) {
-          setProfile(data);
-          setUsername(data.username);
-          setFirstName(data.first_name);
-          setLastName(data.last_name);
+        if (error) {
+          console.error("Error loading profile:", error);
+          setError("Failed to load profile: " + error.message);
+        } else if (data && data.length > 0) {
+          const profileData = data[0];
+          setProfile(profileData);
+          setUsername(profileData.username);
+          setFirstName(profileData.first_name);
+          setLastName(profileData.last_name);
 
           // Check if user can change username (once a month)
-          if (data.last_username_change) {
-            const lastChange = new Date(data.last_username_change);
+          if (profileData.last_username_change) {
+            const lastChange = new Date(profileData.last_username_change);
             const now = new Date();
             const daysSinceChange = (now.getTime() - lastChange.getTime()) / (1000 * 60 * 60 * 24);
             setCanChangeUsername(daysSinceChange >= 30);
           }
+        } else {
+          setError("Profile not found. Please contact support.");
         }
+      } catch (err) {
+        console.error("Error loading profile:", err);
+        setError("Failed to load profile");
+      } finally {
+        setLoadingProfile(false);
       }
     }
 
     loadProfile();
   }, [user]);
 
-  if (loading || !profile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/");
+  };
 
   const handleSave = async () => {
     setError("");
@@ -84,7 +95,7 @@ export default function AccountPage() {
     };
 
     // Only update username if it changed and user is allowed
-    if (username !== profile.username) {
+    if (username !== profile?.username) {
       if (!canChangeUsername) {
         setError("You can only change your username once a month");
         return;
@@ -107,16 +118,47 @@ export default function AccountPage() {
       const { data } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user!.id)
-        .single();
-      if (data) setProfile(data);
+        .eq("id", user!.id);
+      if (data && data.length > 0) setProfile(data[0]);
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.push("/");
-  };
+  if (loading || loadingProfile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-red-600 text-6xl mb-4">❌</div>
+          <h2 className="text-2xl font-bold mb-2">Profile Not Found</h2>
+          <p className="text-gray-600 mb-4">{error || "Your profile could not be loaded. This may be because your account was created before the profile system was set up."}</p>
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Back to Dashboard
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50">

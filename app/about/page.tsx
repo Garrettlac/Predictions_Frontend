@@ -24,7 +24,7 @@ function BackNav() {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3, duration: 0.6 }}
-      className="fixed top-8 left-8 z-50"
+      className="fixed top-8 left-8 z-[100]"
     >
       <Link
         href="/dashboard"
@@ -300,12 +300,6 @@ function InteractionZone() {
             transition={{ duration: 0.3 }}
           />
         </motion.button>
-
-        <p className="text-fluid-sm text-black/40 leading-reading pl-1">
-          Updated every morning.
-          <br />
-          No sign-up required.
-        </p>
       </div>
     </div>
   );

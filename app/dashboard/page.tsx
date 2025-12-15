@@ -26,7 +26,12 @@ interface UserPick {
   id: string;
   player_name: string;
   stat_type: string;
-  prediction_value: number;
+  line: number;
+  probability: number;
+  team: string;
+  matchup: string;
+  confidence: string;
+  prediction_value?: number;
   actual_value: number | null;
   status: string;
   game_date: string;
@@ -40,12 +45,18 @@ export default function DashboardPage() {
   const [recentPicks, setRecentPicks] = useState<UserPick[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
+  console.log('[Dashboard] Render:', { isAuthenticated, loading, hasUser: !!user, userId: user?.id });
+
+  // Immediate redirect if not authenticated (runs on every render)
   useEffect(() => {
+    console.log('[Dashboard] Auth check:', { loading, isAuthenticated });
     if (!loading && !isAuthenticated) {
-      router.push("/");
+      console.log('[Dashboard] Not authenticated, redirecting to /get-started');
+      router.replace("/get-started");
     }
   }, [isAuthenticated, loading, router]);
 
+  // Load user data
   useEffect(() => {
     async function loadData() {
       if (user) {
@@ -53,22 +64,20 @@ export default function DashboardPage() {
         const { data: profileData } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", user.id)
-          .single();
+          .eq("id", user.id);
 
-        if (profileData) {
-          setProfile(profileData);
+        if (profileData && profileData.length > 0) {
+          setProfile(profileData[0]);
         }
 
         // Load stats
         const { data: statsData } = await supabase
           .from("user_stats")
           .select("*")
-          .eq("user_id", user.id)
-          .single();
+          .eq("user_id", user.id);
 
-        if (statsData) {
-          setStats(statsData);
+        if (statsData && statsData.length > 0) {
+          setStats(statsData[0]);
         }
 
         // Load recent picks
@@ -90,19 +99,38 @@ export default function DashboardPage() {
     loadData();
   }, [user]);
 
-  if (loading || loadingData) {
+  // Show loading screen while checking auth
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
+  // Block access for unauthenticated users
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadingData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   const winRate = stats && stats.total_predictions > 0
@@ -224,7 +252,10 @@ export default function DashboardPage() {
                   <div>
                     <p className="font-semibold text-slate-900">{pick.player_name}</p>
                     <p className="text-sm text-slate-600">
-                      {pick.stat_type}: {pick.prediction_value}
+                      {pick.stat_type} over {pick.line} ({pick.probability}%)
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {pick.team} • {pick.matchup}
                     </p>
                   </div>
                   <div className="text-right">

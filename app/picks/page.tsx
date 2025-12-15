@@ -5,16 +5,29 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
+import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
+
+interface Pick {
+  id: string;
+  player_name: string;
+  stat_type: string;
+  line: number;
+  probability: number;
+  team: string;
+  matchup: string;
+  confidence: string;
+  status: string;
+  game_date: string;
+}
 
 export default function PicksPage() {
   const { isAuthenticated, user, signOut, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Wait for auth to load, then check if authenticated
     if (!loading && !isAuthenticated) {
-      router.push("/signin");
+      router.replace("/get-started");
     }
   }, [isAuthenticated, loading, router]);
 
@@ -23,20 +36,26 @@ export default function PicksPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-slate-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
       <Header user={user} signOut={signOut} />
-      <PicksGrid />
+      <PicksGrid userId={user?.id} />
     </main>
   );
 }
@@ -53,7 +72,7 @@ function Header({ user, signOut }: { user: User | null; signOut: () => Promise<v
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
       <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <Link
-          href="/"
+          href="/dashboard"
           className="text-sm font-medium text-gray-700 hover:text-black transition-colors flex items-center gap-2"
         >
           <span>←</span> Back
@@ -69,9 +88,6 @@ function Header({ user, signOut }: { user: User | null; signOut: () => Promise<v
         </motion.div>
 
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-600">
-            {user?.email}
-          </div>
           <button
             onClick={handleSignOut}
             className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
@@ -84,22 +100,63 @@ function Header({ user, signOut }: { user: User | null; signOut: () => Promise<v
   );
 }
 
-function PicksGrid() {
+function PicksGrid({ userId }: { userId?: string }) {
   const [filter, setFilter] = useState<"all" | "high" | "medium">("all");
+  const [picks, setPicks] = useState<Pick[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const predictions = [
-    { player: "Luka Dončić", stat: "PTS", line: 32.5, prob: 73, team: "DAL", matchup: "vs PHX", confidence: "high" },
-    { player: "Nikola Jokić", stat: "REB", line: 11.5, prob: 68, team: "DEN", matchup: "@ LAL", confidence: "high" },
-    { player: "Damian Lillard", stat: "AST", line: 7.5, prob: 61, team: "MIL", matchup: "vs CHI", confidence: "medium" },
-    { player: "Jayson Tatum", stat: "PTS", line: 27.5, prob: 71, team: "BOS", matchup: "@ NYK", confidence: "high" },
-    { player: "Anthony Davis", stat: "REB", line: 10.5, prob: 66, team: "LAL", matchup: "vs DEN", confidence: "high" },
-    { player: "Tyrese Haliburton", stat: "AST", line: 9.5, prob: 59, team: "IND", matchup: "@ ATL", confidence: "medium" },
-    { player: "Giannis Antetokounmpo", stat: "PTS", line: 30.5, prob: 64, team: "MIL", matchup: "vs CHI", confidence: "medium" },
-    { player: "Kevin Durant", stat: "PTS", line: 26.5, prob: 69, team: "PHX", matchup: "@ DAL", confidence: "high" },
-    { player: "Joel Embiid", stat: "REB", line: 10.5, prob: 62, team: "PHI", matchup: "vs CLE", confidence: "medium" },
-  ];
+  useEffect(() => {
+    async function loadPicks() {
+      if (!userId) return;
 
-  const filteredPredictions = predictions.filter(p => {
+      setLoading(true);
+      
+      // Get today's date
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data, error } = await supabase
+        .from("user_picks")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("game_date", today)
+        .order("probability", { ascending: false });
+
+      if (error) {
+        console.error("Error loading picks:", error);
+      } else if (data) {
+        setPicks(data);
+      }
+
+      setLoading(false);
+    }
+
+    loadPicks();
+  }, [userId]);
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-12 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading picks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (picks.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="bg-white rounded-2xl p-12 text-center shadow-lg border border-gray-200">
+          <div className="text-6xl mb-4">🏀</div>
+          <h3 className="text-2xl font-bold mb-2">No picks for today</h3>
+          <p className="text-gray-600">Check back later for today's predictions</p>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredPredictions = picks.filter(p => {
     if (filter === "all") return true;
     if (filter === "high") return p.confidence === "high";
     if (filter === "medium") return p.confidence === "medium";
@@ -121,19 +178,19 @@ function PicksGrid() {
             active={filter === "all"}
             onClick={() => setFilter("all")}
             label="All Picks"
-            count={predictions.length}
+            count={picks.length}
           />
           <FilterButton
             active={filter === "high"}
             onClick={() => setFilter("high")}
             label="High Confidence"
-            count={predictions.filter(p => p.confidence === "high").length}
+            count={picks.filter(p => p.confidence === "high").length}
           />
           <FilterButton
             active={filter === "medium"}
             onClick={() => setFilter("medium")}
             label="Medium Confidence"
-            count={predictions.filter(p => p.confidence === "medium").length}
+            count={picks.filter(p => p.confidence === "medium").length}
           />
         </div>
       </motion.div>
@@ -141,7 +198,7 @@ function PicksGrid() {
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPredictions.map((prediction, idx) => (
-          <PredictionCard key={`${prediction.player}-${prediction.stat}`} prediction={prediction} delay={idx * 0.05} />
+          <PredictionCard key={prediction.id} prediction={prediction} delay={idx * 0.05} />
         ))}
       </div>
 
@@ -154,9 +211,9 @@ function PicksGrid() {
       >
         <h3 className="text-lg font-bold mb-4">Today's Summary</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatBox label="Total Picks" value={predictions.length} />
-          <StatBox label="Avg Confidence" value={`${Math.round(predictions.reduce((acc, p) => acc + p.prob, 0) / predictions.length)}%`} />
-          <StatBox label="High Confidence" value={predictions.filter(p => p.confidence === "high").length} />
+          <StatBox label="Total Picks" value={picks.length} />
+          <StatBox label="Avg Confidence" value={picks.length > 0 ? `${Math.round(picks.reduce((acc, p) => acc + p.probability, 0) / picks.length)}%` : "0%"} />
+          <StatBox label="High Confidence" value={picks.filter(p => p.confidence === "high").length} />
         </div>
       </motion.div>
     </div>
@@ -178,7 +235,7 @@ function FilterButton({ active, onClick, label, count }: { active: boolean; onCl
   );
 }
 
-function PredictionCard({ prediction, delay }: { prediction: any; delay: number }) {
+function PredictionCard({ prediction, delay }: { prediction: Pick; delay: number }) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -209,13 +266,13 @@ function PredictionCard({ prediction, delay }: { prediction: any; delay: number 
           </span>
           <span className="text-xs text-gray-500">{prediction.matchup}</span>
         </div>
-        <h3 className="text-xl font-bold">{prediction.player}</h3>
+        <h3 className="text-xl font-bold">{prediction.player_name}</h3>
       </div>
 
       {/* Stat Line */}
       <div className="mb-6">
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-black">{prediction.stat}</span>
+          <span className="text-2xl font-black">{prediction.stat_type}</span>
           <span className="text-gray-600">over</span>
           <span className="text-2xl font-black text-blue-700">{prediction.line}</span>
         </div>
@@ -225,7 +282,7 @@ function PredictionCard({ prediction, delay }: { prediction: any; delay: number 
       <div className="relative">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-600">Probability</span>
-          <span className="text-2xl font-black">{prediction.prob}%</span>
+          <span className="text-2xl font-black">{prediction.probability}%</span>
         </div>
         
         {/* Progress Bar */}
@@ -233,7 +290,7 @@ function PredictionCard({ prediction, delay }: { prediction: any; delay: number 
           <motion.div
             className="h-full bg-gradient-to-r from-slate-600 to-blue-600 rounded-full"
             initial={{ width: 0 }}
-            animate={{ width: isHovered ? `${prediction.prob}%` : "0%" }}
+            animate={{ width: isHovered ? `${prediction.probability}%` : "0%" }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           />
         </div>

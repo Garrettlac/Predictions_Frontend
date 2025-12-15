@@ -27,17 +27,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  console.log('[AuthProvider] Render:', { user: !!user, userId: user?.id, loading });
+
   useEffect(() => {
-    // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    console.log('[AuthProvider] Initializing auth...');
+    
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('[AuthProvider] Session check:', { hasSession: !!session, userId: session?.user?.id, email: session?.user?.email, error });
+        
+        // If we have a session, validate the user still exists
+        if (session?.user) {
+          const { data: userData, error: userError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', session.user.id)
+            .single();
+          
+          // If user doesn't exist in database (deleted account), clear the session
+          if (userError || !userData) {
+            console.log('[AuthProvider] User not found in profiles, clearing session:', { userError });
+            await supabase.auth.signOut();
+            localStorage.clear();
+            sessionStorage.clear();
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+        }
+        
+        console.log('[AuthProvider] Setting user:', { hasUser: !!session?.user, userId: session?.user?.id });
+        setUser(session?.user ?? null);
+        setLoading(false);
+      } catch (error) {
+        console.error('[AuthProvider] Error initializing auth:', error);
+        // On error, clear everything to be safe
+        await supabase.auth.signOut();
+        localStorage.clear();
+        sessionStorage.clear();
+        setUser(null);
+        setLoading(false);
+      }
+    };
+    
+    initializeAuth();
 
     // Listen for changes on auth state (sign in, sign out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only update state if it's a meaningful change
+      if (event === 'SIGNED_OUT' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setUser(session?.user ?? null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -81,6 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
+      // Better error messages for common cases
+      if (error.message.includes('already registered')) {
+        return { success: false, error: 'This email is already registered. Try signing in instead.' };
+      }
       return { success: false, error: error.message };
     }
 
@@ -98,7 +143,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
       if (profileError) {
-        return { success: false, error: profileError.message };
+        // Better error messages for profile creation
+        if (profileError.message.includes('duplicate key') && profileError.message.includes('username')) {
+          return { success: false, error: 'This username is already taken. Please choose a different one.' };
+        }
+        if (profileError.message.includes('duplicate key') && profileError.message.includes('email')) {
+          return { success: false, error: 'This email is already registered. Try signing in instead.' };
+        }
+        if (profileError.message.includes('duplicate key')) {
+          return { success: false, error: 'An account with this information already exists. Try signing in instead.' };
+        }
+        return { success: false, error: 'Failed to create profile. Please try again.' };
       }
     }
 
